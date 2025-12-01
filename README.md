@@ -1,5 +1,9 @@
 # Serilog.Sinks.GodotConsole
 
+[![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.GodotConsole.svg)](https://www.nuget.org/packages/Serilog.Sinks.GodotConsole)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Serilog.Sinks.GodotConsole.svg)](https://www.nuget.org/packages/Serilog.Sinks.GodotConsole)
+[![GitHub](https://img.shields.io/github/license/gosferano/serilog-godot-sink.svg)](https://github.com/gosferano/serilog-godot-sink/blob/main/LICENSE)
+
 A Serilog sink that writes log events to the Godot console using `GD.PrintRich()` with proper line handling to prevent extra blank lines in stack traces.
 
 ## Features
