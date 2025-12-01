@@ -33,7 +33,7 @@ Install-Package Serilog.Sinks.GodotConsole
 
 ```csharp
 using Serilog;
-using Chronoscape.Logging;
+using Serilog.Sinks.GodotConsole;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.GodotConsole()
