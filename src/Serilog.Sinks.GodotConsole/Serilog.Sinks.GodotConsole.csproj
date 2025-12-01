@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Package Information -->
+    <PackageId>Serilog.Sinks.GodotConsole</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>gosferano</Authors>
+    <Company>gosferano</Company>
+    <Description>A Serilog sink that writes log events to the Godot console with rich text formatting and proper multi-line output handling.</Description>
+
+    <PackageProjectUrl>https://github.com/gosferano/serilog-godot-sink</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gosferano/serilog-godot-sink</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+  <PackageReference Include="GodotSharp" Version="4.*" PrivateAssets="all" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
