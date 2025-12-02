@@ -25,12 +25,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-  <PackageReference Include="GodotSharp" Version="4.*" PrivateAssets="all" />
+    <PackageReference Include="GodotSharp" Version="4.*" PrivateAssets="all" />
     <PackageReference Include="Serilog" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
