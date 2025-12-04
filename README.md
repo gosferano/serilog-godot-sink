@@ -65,6 +65,35 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 ```
 
+### With template selector
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.GodotConsole(templateSelector: logEvent => logEvent.Level switch
+    {
+        LogEventLevel.Verbose => "[color=#949494]{Timestamp:HH:mm:ss} [VRB] {Message}[/color]",
+        LogEventLevel.Debug => "[color=#DADADA]{Timestamp:HH:mm:ss} [DBG] {Message}[/color]",
+        LogEventLevel.Information => "[color=#AFD7AF]{Timestamp:HH:mm:ss} [INF] {Message}[/color]",
+        LogEventLevel.Warning => "[color=#FFAF87]{Timestamp:HH:mm:ss} [WRN] {Message}[/color]",
+        LogEventLevel.Error => "[color=#FF6B9D]{Timestamp:HH:mm:ss} [ERR] {Message}{Exception}[/color]",
+        LogEventLevel.Fatal => "[color=#FF005F][b]{Timestamp:HH:mm:ss} [FTL] {Message}{Exception}[/b][/color]",
+        _ => "{Timestamp:HH:mm:ss} [{Level:u3}] {Message}"
+    })
+    .CreateLogger();
+```
+
+### With custom formatter
+
+```csharp
+using Serilog.Formatting.Display;
+var formatter = new MessageTemplateTextFormatter(
+    "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+    null);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.GodotConsole(formatter: formatter)
+    .CreateLogger();
+```
+
 ## Output Examples
 
 Example output:
