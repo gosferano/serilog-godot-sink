@@ -12,6 +12,7 @@ public class GodotConsoleSink : ILogEventSink
     private readonly ITextFormatter? _formatter;
     private readonly Func<LogEvent, string>? _templateSelector;
     private readonly IFormatProvider? _formatProvider;
+    private readonly object _syncRoot;
     private readonly ConcurrentDictionary<string, MessageTemplateTextFormatter> _formatterCache;
 
     public GodotConsoleSink(
@@ -22,6 +23,7 @@ public class GodotConsoleSink : ILogEventSink
         _formatter = formatter;
         _templateSelector = templateSelector;
         _formatProvider = formatProvider;
+        _syncRoot = new object();
         _formatterCache = new ConcurrentDictionary<string, MessageTemplateTextFormatter>();
 
         // Default formatter if nothing provided
@@ -60,9 +62,12 @@ public class GodotConsoleSink : ILogEventSink
         // This prevents Godot console from adding extra blank lines
         var lines = message.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
 
-        foreach (var line in lines)
+        lock (_syncRoot)
         {
-            GD.PrintRich(line);
+            foreach (var line in lines)
+            {
+                GD.PrintRich(line);
+            }
         }
     }
 }
