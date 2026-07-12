@@ -11,6 +11,8 @@ A Serilog sink that writes log events to the Godot console using `GD.PrintRich()
 - Customizable output templates
 - Rich text formatting support via GD.PrintRich()
 - Proper stack trace formatting without extra blank lines
+- Optional routing of warnings/errors to Godot's Debugger dock (GD.PushWarning / GD.PushError)
+- Per-sink level control via `restrictedToMinimumLevel` / `levelSwitch`
 - Simple integration with Serilog
 
 ## Installation
@@ -79,6 +81,35 @@ Log.Logger = new LoggerConfiguration()
         LogEventLevel.Fatal => "[color=#FF005F][b]{Timestamp:HH:mm:ss} [FTL] {Message}{Exception}[/b][/color]",
         _ => "{Timestamp:HH:mm:ss} [{Level:u3}] {Message}"
     })
+    .CreateLogger();
+```
+
+### Surfacing warnings and errors in the Debugger
+
+Set `pushErrorsToDebugger: true` to additionally raise `Warning` events via
+`GD.PushWarning()` and `Error`/`Fatal` events via `GD.PushError()`. These appear
+in Godot's **Debugger → Errors** dock (with a captured stack) *in addition to*
+being printed to the console, so they aren't easily missed during play-testing.
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.GodotConsole(pushErrorsToDebugger: true)
+    .CreateLogger();
+```
+
+### Per-sink minimum level
+
+Like other Serilog sinks, `GodotConsole` accepts `restrictedToMinimumLevel` and
+`levelSwitch` to control the sink's level independently of the global
+`MinimumLevel`:
+
+```csharp
+var levelSwitch = new LoggingLevelSwitch(LogEventLevel.Information);
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.GodotConsole(
+        restrictedToMinimumLevel: LogEventLevel.Debug,
+        levelSwitch: levelSwitch) // levelSwitch overrides restrictedToMinimumLevel when set
     .CreateLogger();
 ```
 

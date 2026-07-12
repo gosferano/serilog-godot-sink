@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Godot;
 using Serilog.Core;
 using Serilog.Events;
@@ -12,17 +12,21 @@ public class GodotConsoleSink : ILogEventSink
     private readonly ITextFormatter? _formatter;
     private readonly Func<LogEvent, string>? _templateSelector;
     private readonly IFormatProvider? _formatProvider;
+    private readonly bool _pushErrorsToDebugger;
     private readonly object _syncRoot;
     private readonly ConcurrentDictionary<string, MessageTemplateTextFormatter> _formatterCache;
 
     public GodotConsoleSink(
         ITextFormatter? formatter = null,
         Func<LogEvent, string>? templateSelector = null,
-        IFormatProvider? formatProvider = null)
+        IFormatProvider? formatProvider = null,
+        bool pushErrorsToDebugger = false
+    )
     {
         _formatter = formatter;
         _templateSelector = templateSelector;
         _formatProvider = formatProvider;
+        _pushErrorsToDebugger = pushErrorsToDebugger;
         _syncRoot = new object();
         _formatterCache = new ConcurrentDictionary<string, MessageTemplateTextFormatter>();
 
@@ -30,7 +34,8 @@ public class GodotConsoleSink : ILogEventSink
         if (_formatter == null && _templateSelector == null)
         {
             _formatter = new MessageTemplateTextFormatter(
-                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+            );
         }
     }
 
@@ -44,8 +49,9 @@ public class GodotConsoleSink : ILogEventSink
             var template = _templateSelector(logEvent);
             var formatter = _formatterCache.GetOrAdd(
                 template,
-                t => new MessageTemplateTextFormatter(t, _formatProvider));
-            
+                t => new MessageTemplateTextFormatter(t, _formatProvider)
+            );
+
             using var writer = new StringWriter();
             formatter.Format(logEvent, writer);
             message = writer.ToString().TrimEnd();
@@ -67,6 +73,22 @@ public class GodotConsoleSink : ILogEventSink
             foreach (var line in lines)
             {
                 GD.PrintRich(line);
+            }
+
+            // Optionally surface warnings and errors in Godot's Debugger dock as
+            // well, so they aren't easily missed in the console output pane.
+            if (_pushErrorsToDebugger)
+            {
+                switch (logEvent.Level)
+                {
+                    case LogEventLevel.Warning:
+                        GD.PushWarning(message);
+                        break;
+                    case LogEventLevel.Error:
+                    case LogEventLevel.Fatal:
+                        GD.PushError(message);
+                        break;
+                }
             }
         }
     }

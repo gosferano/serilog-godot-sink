@@ -1,4 +1,5 @@
 ﻿using Serilog.Configuration;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Formatting.Display;
@@ -14,13 +15,18 @@ public static class GodotConsoleSinkExtensions
     /// <param name="outputTemplate">A message template describing the format used to write to the sink.
     /// Supports Serilog template syntax: {Timestamp}, {Level}, {Message}, {Exception}, {Properties}, etc.</param>
     /// <param name="formatProvider">Supplies culture-specific formatting information, or null to use the current culture.</param>
+    /// <param name="pushErrorsToDebugger">When true, Warning events are also raised via GD.PushWarning and
+    /// Error/Fatal events via GD.PushError, so they surface in Godot's Debugger dock in addition to being printed.</param>
+    /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+    /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
+    /// <param name="levelSwitch">A switch allowing the pass-through minimum level to be changed at runtime.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <example>
     /// <code>
     /// Log.Logger = new LoggerConfiguration()
     ///     .WriteTo.GodotConsole()  // Uses default template
     ///     .CreateLogger();
-    /// 
+    ///
     /// // Custom template
     /// Log.Logger = new LoggerConfiguration()
     ///     .WriteTo.GodotConsole("{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
@@ -29,16 +35,25 @@ public static class GodotConsoleSinkExtensions
     /// </example>
     public static LoggerConfiguration GodotConsole(
         this LoggerSinkConfiguration sinkConfiguration,
-        string outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-        IFormatProvider? formatProvider = null)
+        string outputTemplate =
+            "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+        IFormatProvider? formatProvider = null,
+        bool pushErrorsToDebugger = false,
+        LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose,
+        LoggingLevelSwitch? levelSwitch = null
+    )
     {
         // Create a MessageTemplateTextFormatter from the string template
         // This will be used to format all log events with the same template
         var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
-        
+
         // Pass the formatter to the sink constructor
         // templateSelector and formatProvider will be null since we're using a static formatter
-        return sinkConfiguration.Sink(new GodotConsoleSink(formatter: formatter));
+        return sinkConfiguration.Sink(
+            new GodotConsoleSink(formatter: formatter, pushErrorsToDebugger: pushErrorsToDebugger),
+            restrictedToMinimumLevel,
+            levelSwitch
+        );
     }
 
     /// <summary>
@@ -54,6 +69,11 @@ public static class GodotConsoleSinkExtensions
     /// the parsed formatter for better performance.</param>
     /// <param name="formatProvider">Supplies culture-specific formatting information, or null to use the current culture.
     /// This will be used when creating formatters from the template strings.</param>
+    /// <param name="pushErrorsToDebugger">When true, Warning events are also raised via GD.PushWarning and
+    /// Error/Fatal events via GD.PushError, so they surface in Godot's Debugger dock in addition to being printed.</param>
+    /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+    /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
+    /// <param name="levelSwitch">A switch allowing the pass-through minimum level to be changed at runtime.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <example>
     /// <code>
@@ -70,7 +90,7 @@ public static class GodotConsoleSinkExtensions
     ///         _ => "{Timestamp:HH:mm:ss} [{Level:u3}] {Message}"
     ///     })
     ///     .CreateLogger();
-    /// 
+    ///
     /// // Different templates based on log properties
     /// Log.Logger = new LoggerConfiguration()
     ///     .WriteTo.GodotConsole(templateSelector: logEvent =>
@@ -85,15 +105,25 @@ public static class GodotConsoleSinkExtensions
     public static LoggerConfiguration GodotConsole(
         this LoggerSinkConfiguration sinkConfiguration,
         Func<LogEvent, string> templateSelector,
-        IFormatProvider? formatProvider = null)
+        IFormatProvider? formatProvider = null,
+        bool pushErrorsToDebugger = false,
+        LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose,
+        LoggingLevelSwitch? levelSwitch = null
+    )
     {
         // Pass the template selector function and format provider to the sink constructor
         // The sink will call templateSelector for each log event to get the template,
         // then create/retrieve a cached MessageTemplateTextFormatter for that template
         // formatter will be null since we're using dynamic template selection
-        return sinkConfiguration.Sink(new GodotConsoleSink(
-            templateSelector: templateSelector,
-            formatProvider: formatProvider));
+        return sinkConfiguration.Sink(
+            new GodotConsoleSink(
+                templateSelector: templateSelector,
+                formatProvider: formatProvider,
+                pushErrorsToDebugger: pushErrorsToDebugger
+            ),
+            restrictedToMinimumLevel,
+            levelSwitch
+        );
     }
 
     /// <summary>
@@ -104,6 +134,11 @@ public static class GodotConsoleSinkExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A custom formatter implementing ITextFormatter to control the output format.
     /// The formatter's Format method will be called for each log event.</param>
+    /// <param name="pushErrorsToDebugger">When true, Warning events are also raised via GD.PushWarning and
+    /// Error/Fatal events via GD.PushError, so they surface in Godot's Debugger dock in addition to being printed.</param>
+    /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink.
+    /// Ignored when <paramref name="levelSwitch"/> is specified.</param>
+    /// <param name="levelSwitch">A switch allowing the pass-through minimum level to be changed at runtime.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <example>
     /// <code>
@@ -111,7 +146,7 @@ public static class GodotConsoleSinkExtensions
     /// Log.Logger = new LoggerConfiguration()
     ///     .WriteTo.GodotConsole(formatter: new ColoredLevelFormatter())
     ///     .CreateLogger();
-    /// 
+    ///
     /// // Using Serilog's built-in formatters
     /// Log.Logger = new LoggerConfiguration()
     ///     .WriteTo.GodotConsole(formatter: new CompactJsonFormatter())
@@ -120,11 +155,19 @@ public static class GodotConsoleSinkExtensions
     /// </example>
     public static LoggerConfiguration GodotConsole(
         this LoggerSinkConfiguration sinkConfiguration,
-        ITextFormatter formatter)
+        ITextFormatter formatter,
+        bool pushErrorsToDebugger = false,
+        LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose,
+        LoggingLevelSwitch? levelSwitch = null
+    )
     {
         // Pass the user's custom formatter directly to the sink constructor
         // The formatter has complete control over how log events are rendered
         // templateSelector and formatProvider will be null
-        return sinkConfiguration.Sink(new GodotConsoleSink(formatter: formatter));
+        return sinkConfiguration.Sink(
+            new GodotConsoleSink(formatter: formatter, pushErrorsToDebugger: pushErrorsToDebugger),
+            restrictedToMinimumLevel,
+            levelSwitch
+        );
     }
 }
